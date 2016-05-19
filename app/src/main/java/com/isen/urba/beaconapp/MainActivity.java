@@ -4,8 +4,12 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.widget.ListView;
 
 public class MainActivity extends AppCompatActivity {
+
+    ListView beaconListView;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
