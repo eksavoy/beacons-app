@@ -96,7 +96,14 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
     }
 
     private void updateListViewBeacons(final List<com.isen.urba.beaconapp.pojo.Beacon> beacons) {
-
+        if(adapter != null && adapter.getCount() > 0){
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    adapter.clear();
+                }
+            });
+        }
 
         runOnUiThread(new Runnable() {
             @Override

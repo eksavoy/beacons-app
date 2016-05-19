@@ -11,8 +11,8 @@
 
     <ListView
         android:id="@+id/beaconsList"
-        android:layout_width="384dp"
-        android:layout_height="495dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         tools:layout_editor_absoluteX="0dp"
         tools:layout_editor_absoluteY="8dp"
         app:layout_constraintLeft_toLeftOf="@+id/activity_main"
