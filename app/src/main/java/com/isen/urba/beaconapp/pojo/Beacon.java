@@ -11,7 +11,6 @@ public class Beacon implements Comparable<Beacon>{
     private String name;
     private String bluetoothName;
     private String bluetoothAdress;
-    private Identifier UUID;
     private int rssi;
 
     public Beacon() {
@@ -19,14 +18,12 @@ public class Beacon implements Comparable<Beacon>{
         this.bluetoothAdress = "0:0:0:0:0:0";
         this.bluetoothName = "BEACON";
         this.rssi = 0;
-        this.UUID = null;
     }
 
-    public Beacon(String name, String bluetoothName, String bluetoothAdress, Identifier UUID, int rssi) {
+    public Beacon(String name, String bluetoothName, String bluetoothAdress, int rssi) {
         this.name = name;
         this.bluetoothName = bluetoothName;
         this.bluetoothAdress = bluetoothAdress;
-        this.UUID = UUID;
         this.rssi = rssi;
     }
 
@@ -62,16 +59,17 @@ public class Beacon implements Comparable<Beacon>{
         this.bluetoothAdress = bluetoothAdress;
     }
 
-    public Identifier getUUID() {
-        return UUID;
-    }
-
-    public void setUUID(Identifier UUID) {
-        this.UUID = UUID;
-    }
-
     @Override
     public int compareTo(Beacon another) {
         return this.getName().compareToIgnoreCase(another.getName());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(o != null && o instanceof Beacon){
+            Beacon other = (Beacon) o;
+            return (this.getName().equals(other.getName()) && this.getBluetoothAdress().equals(other.getBluetoothAdress()) && this.getBluetoothName().equals(other.getBluetoothName()));
+        }
+        return false;
     }
 }

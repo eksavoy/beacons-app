@@ -12,5 +12,4 @@ public class ViewHolder {
     public TextView bluetoothName;
     public TextView name;
     public TextView rssi;
-    public TextView uuid;
 }

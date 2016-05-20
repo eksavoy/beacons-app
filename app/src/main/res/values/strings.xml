@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">BeaconApp</string>
+    <string name="shared_pref">beacons</string>
+    <string name="beacoon_key">listBeacons</string>
 </resources>

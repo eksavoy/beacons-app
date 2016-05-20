@@ -33,7 +33,6 @@ public class BeaconsAdapter extends ArrayAdapter<Beacon>{
         viewHolder.bluetoothName.setText(beacon.getBluetoothName());
         viewHolder.bluetoothAdress.setText(beacon.getBluetoothAdress());
         viewHolder.rssi.setText(String.valueOf(beacon.getRssi()));
-        viewHolder.uuid.setText(beacon.getUUID().toString());
 
         return view;
     }
@@ -48,7 +47,6 @@ public class BeaconsAdapter extends ArrayAdapter<Beacon>{
             viewHolder.bluetoothName = (TextView) view.findViewById(R.id.beaconBluetoothName);
             viewHolder.bluetoothAdress = (TextView) view.findViewById(R.id.beaconBluetoothAddress);
             viewHolder.rssi = (TextView) view.findViewById(R.id.beaconRSSI);
-            viewHolder.uuid = (TextView) view.findViewById(R.id.beaconUUID);
 
             view.setTag(viewHolder);
         }else{
