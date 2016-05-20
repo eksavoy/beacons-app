@@ -26,6 +26,12 @@ public class Beacon implements Comparable<Beacon>{
         this.bluetoothAdress = bluetoothAdress;
         this.rssi = rssi;
     }
+    public Beacon(String bluetoothName, String bluetoothAdress, int rssi) {
+        this.name = "Inconnu";
+        this.bluetoothName = bluetoothName;
+        this.bluetoothAdress = bluetoothAdress;
+        this.rssi = rssi;
+    }
 
     public int getRssi() {
         return rssi;
@@ -68,7 +74,7 @@ public class Beacon implements Comparable<Beacon>{
     public boolean equals(Object o) {
         if(o != null && o instanceof Beacon){
             Beacon other = (Beacon) o;
-            return (this.getName().equals(other.getName()) && this.getBluetoothAdress().equals(other.getBluetoothAdress()) && this.getBluetoothName().equals(other.getBluetoothName()));
+            return (this.getBluetoothAdress().equals(other.getBluetoothAdress()) && this.getBluetoothName().equals(other.getBluetoothName()));
         }
         return false;
     }

@@ -13,8 +13,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.PopupWindow;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -30,6 +32,7 @@ import org.altbeacon.beacon.startup.BootstrapNotifier;
 
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -39,7 +42,7 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
     BeaconsAdapter adapter = null;
 
     List<com.isen.urba.beaconapp.pojo.Beacon> beacons = null;
-    List<com.isen.urba.beaconapp.pojo.Beacon> beaconsAuthorized = new LinkedList<>();
+    List<com.isen.urba.beaconapp.pojo.Beacon> beaconsAuthorized;
     Collection<Beacon> beaconsFind = null;
 
     BeaconManager beaconManager;
@@ -52,6 +55,8 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        beaconsAuthorized = new LinkedList<>();
 
         requestToTurnOnBluetooth();
 
@@ -70,9 +75,11 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
 
     private void saveInPreferences(List<com.isen.urba.beaconapp.pojo.Beacon> beacons){
         SharedPreferences.Editor editor = this.sharedPreferences.edit();
+        editor.clear();
+        editor.commit();
         Gson gson = new Gson();
         Type type = new TypeToken<LinkedList<com.isen.urba.beaconapp.pojo.Beacon>>() {}.getType();
-        String json = gson.toJson(beacons, type);
+        String json = gson.toJson(beaconsAuthorized, type);
 
         editor.putString(String.valueOf(R.string.beacoon_key), json);
         editor.commit();
@@ -86,6 +93,9 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
             String beaconsList = this.sharedPreferences.getString(String.valueOf(R.string.beacoon_key), String.valueOf(R.string.beacoon_key));
 
             this.beaconsAuthorized = gson.fromJson(beaconsList, type);
+            if(this.beaconsAuthorized == null){
+                this.beaconsAuthorized = new LinkedList<>();
+            }
         }
 
     }
@@ -110,6 +120,7 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
 
         switch (idSelect){
             case R.id.action_add:
+
                 if(!popupOpen){
                     LayoutInflater layoutInflater = (LayoutInflater) getBaseContext().getSystemService(LAYOUT_INFLATER_SERVICE);
                     final View popup = layoutInflater.inflate(R.layout.popup, null);
@@ -120,6 +131,28 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
                     );
                     Button add = (Button) popup.findViewById(R.id.btn_popup_add);
                     add.setOnClickListener(new Button.OnClickListener(){
+                        @Override
+                        public void onClick(View v) {
+
+                            String id = ((EditText) popup.findViewById(R.id.edt_id)).getText().toString();
+                            String name = ((EditText) popup.findViewById(R.id.edt_name)).getText().toString();
+                            if(!id.isEmpty() && !name.isEmpty()){
+                                Beacon finded = searchById(beaconsFind, id);
+                                com.isen.urba.beaconapp.pojo.Beacon alreadyAdded = searchById(beaconsAuthorized, id);
+                                if((finded != null) && (alreadyAdded == null)){
+                                    beaconsAuthorized.add(new com.isen.urba.beaconapp.pojo.Beacon(name, finded.getBluetoothName(), finded.getBluetoothAddress(), finded.getRssi()));
+                                    popupWindow.dismiss();
+                                    popupOpen = false;
+                                }else{
+                                    Toast.makeText(getApplicationContext(), "Beacon not found", Toast.LENGTH_LONG).show();
+                                }
+                            }else{
+                                Toast.makeText(getApplicationContext(), "Id or Name empty", Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    });
+                    Button close = (Button) popup.findViewById(R.id.btn_popup_close);
+                    close.setOnClickListener(new Button.OnClickListener(){
                         @Override
                         public void onClick(View v) {
                             popupWindow.dismiss();
@@ -137,6 +170,23 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
         }
 
 
+    }
+
+    private Beacon searchById(Collection<Beacon> beacons, String id){
+        for (Beacon beacon : beacons){
+            if(beacon.getBluetoothName().equals(id)){
+                return beacon;
+            }
+        }
+        return null;
+    }
+    private com.isen.urba.beaconapp.pojo.Beacon searchById(List<com.isen.urba.beaconapp.pojo.Beacon> beacons, String id){
+        for (com.isen.urba.beaconapp.pojo.Beacon beacon : beacons){
+            if(beacon.getBluetoothName().equals(id)){
+                return beacon;
+            }
+        }
+        return null;
     }
 
     private void instantiateViews () {
@@ -170,13 +220,15 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
         beaconManager.setRangeNotifier(new RangeNotifier() {
             @Override
             public void didRangeBeaconsInRegion(Collection<Beacon> beaconsNotif, Region region) {
-                if(beaconsNotif.size() > 0){
-                    beaconsFind = beaconsNotif;
+                beaconsFind = beaconsNotif;
+                if((beaconsNotif != null && beaconsAuthorized != null) && (beaconsNotif.size() > 0 && beaconsAuthorized.size() > 0)){
                     beacons = new LinkedList<com.isen.urba.beaconapp.pojo.Beacon>();
                     for(Beacon beacon : beaconsNotif){
-                        com.isen.urba.beaconapp.pojo.Beacon beaconTmp = new com.isen.urba.beaconapp.pojo.Beacon("Test", beacon.getBluetoothName(), beacon.getBluetoothAddress(), beacon.getRssi());
+                        com.isen.urba.beaconapp.pojo.Beacon beaconTmp = new com.isen.urba.beaconapp.pojo.Beacon(beacon.getBluetoothName(), beacon.getBluetoothAddress(), beacon.getRssi());
                         if(beaconsAuthorized.contains(beaconTmp)){
-                            beacons.add(beaconTmp);
+                            com.isen.urba.beaconapp.pojo.Beacon beaconToAdd= searchById(beaconsAuthorized, beacon.getBluetoothName());
+                            beaconToAdd.setRssi(beacon.getRssi());
+                            beacons.add(beaconToAdd);
                         }
                     }
                     updateListViewBeacons(beacons);
@@ -199,6 +251,8 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
                 }
             });
         }
+
+        Collections.sort(beacons);
 
         runOnUiThread(new Runnable() {
             @Override
