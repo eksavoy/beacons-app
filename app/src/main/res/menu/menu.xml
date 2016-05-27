@@ -8,6 +8,11 @@
         android:icon="@mipmap/ic_add"
         android:title="Add"
         app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/action_less"
+        android:icon="@drawable/ic_less"
+        android:title="Del"
+        app:showAsAction="ifRoom" />
 
 
 
