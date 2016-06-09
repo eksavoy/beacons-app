@@ -40,46 +40,15 @@ public class ViewUtils {
             });
         }
 
-        Collections.sort(beacons);
-
         activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                if(adapter != null && adapter.getCount() > 0){
+                    adapter.clear();
+                }
                 adapter.addAll(beacons);
             }
         });
 
     }
-
-    public static RecyclerView instantiateAddBeaconsView(Activity activity, AddBeaconsAdapter adapter){
-        RecyclerView beaconListView;
-        beaconListView = (RecyclerView) activity.findViewById(R.id.add_beacon_recycleView);
-        //beaconListView.setAdapter(adapter);
-        return beaconListView;
-    }
-
-    public static AddBeaconsAdapter instantiateAddBeaconsAdapter(ArrayList<org.altbeacon.beacon.Beacon> beacons){
-        return new AddBeaconsAdapter(beacons);
-    }
-
-//    public static void updateAddBeaconsListView(Activity activity, final AddBeaconsAdapter adapter, final ArrayList<org.altbeacon.beacon.Beacon> beacons) {
-//        if(adapter != null && adapter.getCount() > 0){
-//            activity.runOnUiThread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    adapter.clear();
-//                }
-//            });
-//        }
-//
-//
-//
-//        activity.runOnUiThread(new Runnable() {
-//            @Override
-//            public void run() {
-//                adapter.addAll(beacons);
-//            }
-//        });
-//
-//    }
 }

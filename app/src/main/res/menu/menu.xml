@@ -5,15 +5,19 @@
     <!-- "Mark Favorite", should appear as action button if possible -->
     <item
         android:id="@+id/action_add"
-        android:icon="@mipmap/ic_add"
+        android:icon="@drawable/ic_action_plus_white"
         android:title="Add"
         app:showAsAction="ifRoom"/>
     <item
         android:id="@+id/action_less"
-        android:icon="@drawable/ic_less"
+        android:icon="@drawable/ic_action_minuw_white"
         android:title="Del"
         app:showAsAction="ifRoom" />
 
-
+    <item
+        android:id="@+id/action_name"
+        android:icon="@drawable/ic_action_set_name"
+        android:title="Set name"
+        app:showAsAction="ifRoom" />
 
 </menu>

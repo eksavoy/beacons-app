@@ -1,7 +1,9 @@
 package com.isen.urba.beaconapp;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -10,10 +12,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
 
 import com.isen.urba.beaconapp.adapter.BeaconsAdapter;
+import com.isen.urba.beaconapp.pojo.Device;
 import com.isen.urba.beaconapp.utils.BeaconsUtils;
 import com.isen.urba.beaconapp.utils.SharedPreferencesUtils;
 import com.isen.urba.beaconapp.utils.ViewUtils;
@@ -27,6 +32,7 @@ import org.altbeacon.beacon.Region;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -44,7 +50,8 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
     SharedPreferences sharedPreferences;
 
     Activity currentActivity;
-    //AddPopup popup = null;
+
+    Device device = new Device();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +71,11 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
 
         this.sharedPreferences = SharedPreferencesUtils.initiatSharedPref(getBaseContext());
 
-        beaconsAuthorized = SharedPreferencesUtils.getFromPreferences(this.sharedPreferences);
+        beaconsAuthorized = SharedPreferencesUtils.getBeaconsFromPreferences(this.sharedPreferences);
+        device = SharedPreferencesUtils.getDeviceFromPreferences(this.sharedPreferences);
+        if(device == null){
+            device = new Device();
+        }
     }
 
 
@@ -84,7 +95,7 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
 
     @Override
     protected void onResume() {
-        beaconsAuthorized = SharedPreferencesUtils.getFromPreferences(this.sharedPreferences);
+        beaconsAuthorized = SharedPreferencesUtils.getBeaconsFromPreferences(this.sharedPreferences);
         super.onResume();
     }
 
@@ -96,24 +107,61 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
         switch (idSelect){
             case R.id.action_add:
 
-                if(beaconsFind != null){
-                    Intent intent = new Intent(this, AddBeaconActivity.class);
-                    ArrayList<Beacon> beaconsIntent = new ArrayList<>(beaconsFind);
-                    intent.putParcelableArrayListExtra("Beacons", beaconsIntent);
-                    startActivity(intent);
+                if(device != null || device.getDeviceName() != null){
+                    if(beaconsFind != null){
+                        Intent intent = new Intent(this, AddBeaconActivity.class);
+                        ArrayList<Beacon> beaconsIntent = new ArrayList<>(beaconsFind);
+                        intent.putParcelableArrayListExtra("Beacons", beaconsIntent);
+                        startActivity(intent);
+                    }else{
+                        Toast.makeText(getBaseContext(),"Not beacons find Try again", Toast.LENGTH_LONG).show();
+                    }
                 }else{
-                    Toast.makeText(getBaseContext(),"Not beacons find Try again", Toast.LENGTH_LONG).show();
+                    Toast.makeText(getBaseContext(),"Choose device name", Toast.LENGTH_LONG).show();
                 }
                 return true;
             case  R.id.action_less:
-                SharedPreferencesUtils.deleteSharedPrefs(sharedPreferences);
-                this.beaconsAuthorized = new LinkedList<>();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        adapter.clear();
-                    }
-                });
+                if(device != null || device.getDeviceName() != null){
+                    SharedPreferencesUtils.deleteSharedPrefs(sharedPreferences);
+                    this.beaconsAuthorized = new LinkedList<>();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            adapter.clear();
+                        }
+                    });
+                }else{
+                    Toast.makeText(getBaseContext(), "Choose device name", Toast.LENGTH_LONG).show();
+                }
+                return true;
+            case R.id.action_name:
+                LinearLayout li = new LinearLayout(findViewById(R.id.activity_main).getContext());
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                li.setOrientation(LinearLayout.VERTICAL);
+                li.setLayoutParams(params);
+
+                final EditText ed = new EditText(findViewById(R.id.activity_main).getContext());
+                li.addView(ed, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+                AlertDialog.Builder alertdialog = new AlertDialog.Builder(findViewById(R.id.activity_main).getContext());
+                alertdialog.setTitle("Add Beacons");
+                alertdialog.setView(li);
+                alertdialog
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                device.setDeviceName(ed.getText().toString());
+                                SharedPreferencesUtils.saveDeviceInPreferences(sharedPreferences, device);
+                            }
+                        })
+                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.cancel();
+                            }
+                        });
+
+                alertdialog.create().show();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -151,13 +199,14 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
                 if((beaconsNotif != null && beaconsAuthorized != null) && (beaconsNotif.size() > 0 && beaconsAuthorized.size() > 0)){
                     beacons = new LinkedList<com.isen.urba.beaconapp.pojo.Beacon>();
                     for(Beacon beacon : beaconsNotif){
-                        com.isen.urba.beaconapp.pojo.Beacon beaconTmp = new com.isen.urba.beaconapp.pojo.Beacon(beacon.getBluetoothName(), beacon.getBluetoothAddress(), beacon.getRssi());
+                        com.isen.urba.beaconapp.pojo.Beacon beaconTmp = new com.isen.urba.beaconapp.pojo.Beacon(beacon.getBluetoothName(), beacon.getBluetoothAddress(), -beacon.getRssi());
                         if(beaconsAuthorized.contains(beaconTmp)){
                             com.isen.urba.beaconapp.pojo.Beacon beaconToAdd= BeaconsUtils.searchById(beaconsAuthorized, beacon.getBluetoothName());
-                            beaconToAdd.setRssi(beacon.getRssi());
+                            beaconToAdd.setRssi(-beacon.getRssi());
                             beacons.add(beaconToAdd);
                         }
                     }
+                    Collections.sort(beacons);
                     ViewUtils.updateListViewBeacons(currentActivity, adapter, beacons);
                 }
             }

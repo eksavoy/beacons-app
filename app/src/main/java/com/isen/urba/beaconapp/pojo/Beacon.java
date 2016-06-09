@@ -1,5 +1,7 @@
 package com.isen.urba.beaconapp.pojo;
 
+import android.content.Intent;
+
 import org.altbeacon.beacon.Identifier;
 
 /**
@@ -67,7 +69,7 @@ public class Beacon implements Comparable<Beacon>{
 
     @Override
     public int compareTo(Beacon another) {
-        return this.getName().compareToIgnoreCase(another.getName());
+        return ((Integer)(this.getRssi())).compareTo((Integer)(another.getRssi()));
     }
 
     @Override
