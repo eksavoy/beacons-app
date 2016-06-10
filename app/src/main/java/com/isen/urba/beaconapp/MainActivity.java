@@ -19,6 +19,10 @@ import android.widget.Toast;
 
 import com.isen.urba.beaconapp.adapter.BeaconsAdapter;
 import com.isen.urba.beaconapp.pojo.Device;
+import com.isen.urba.beaconapp.pojo.MongoBeacon;
+import com.isen.urba.beaconapp.pojo.MongoDevise;
+import com.isen.urba.beaconapp.pojo.ResponseActionMongoDevise;
+import com.isen.urba.beaconapp.service.DeviseService;
 import com.isen.urba.beaconapp.utils.BeaconsUtils;
 import com.isen.urba.beaconapp.utils.SharedPreferencesUtils;
 import com.isen.urba.beaconapp.utils.ViewUtils;
@@ -36,6 +40,12 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+
 public class MainActivity extends AppCompatActivity implements BeaconConsumer{
 
     ListView beaconListView;
@@ -52,6 +62,14 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
     Activity currentActivity;
 
     Device device = new Device();
+
+    public static String API = "http://10.134.15.12:4000/";
+
+    Retrofit retrofit;
+
+    DeviseService service;
+
+    String oldPosition = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,8 +92,38 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
         beaconsAuthorized = SharedPreferencesUtils.getBeaconsFromPreferences(this.sharedPreferences);
         device = SharedPreferencesUtils.getDeviceFromPreferences(this.sharedPreferences);
         if(device == null){
-            device = new Device();
+            device =  new Device();
+            LinearLayout li = new LinearLayout(findViewById(R.id.activity_main).getContext());
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            li.setOrientation(LinearLayout.VERTICAL);
+            li.setLayoutParams(params);
+
+            final EditText ed = new EditText(findViewById(R.id.activity_main).getContext());
+            li.addView(ed, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+            AlertDialog.Builder alertdialog = new AlertDialog.Builder(findViewById(R.id.activity_main).getContext());
+            alertdialog.setTitle("Add Name");
+            alertdialog.setView(li);
+            alertdialog
+                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            device.setDeviceName(ed.getText().toString());
+                            SharedPreferencesUtils.saveDeviceInPreferences(sharedPreferences, device);
+                        }
+                    })
+                    .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.cancel();
+                        }
+                    });
+
+            alertdialog.create().show();
         }
+
+        retrofit = new Retrofit.Builder().baseUrl(API).addConverterFactory(GsonConverterFactory.create()).build();
+        service = retrofit.create(DeviseService.class);
     }
 
 
@@ -85,6 +133,7 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
         super.onDestroy();
         beaconManager.unbind(this);
         SharedPreferencesUtils.saveInPreferences(this.sharedPreferences, beaconsAuthorized);
+        SharedPreferencesUtils.saveDeviceInPreferences(sharedPreferences, device);
     }
 
     @Override
@@ -96,6 +145,7 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
     @Override
     protected void onResume() {
         beaconsAuthorized = SharedPreferencesUtils.getBeaconsFromPreferences(this.sharedPreferences);
+        //device = SharedPreferencesUtils.getDeviceFromPreferences(this.sharedPreferences);
         super.onResume();
     }
 
@@ -144,7 +194,7 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
                 li.addView(ed, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
                 AlertDialog.Builder alertdialog = new AlertDialog.Builder(findViewById(R.id.activity_main).getContext());
-                alertdialog.setTitle("Add Beacons");
+                alertdialog.setTitle("Add Name");
                 alertdialog.setView(li);
                 alertdialog
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -207,7 +257,93 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
                         }
                     }
                     Collections.sort(beacons);
-                    ViewUtils.updateListViewBeacons(currentActivity, adapter, beacons);
+                    if(oldPosition == null){
+                        if(device != null && device.getDeviceName() != null){
+                            Call<List<MongoDevise>> find = service.devise(device.getDeviceID());
+                            find.enqueue(new Callback<List<MongoDevise>>() {
+                                @Override
+                                public void onResponse(Call<List<MongoDevise>> call, Response<List<MongoDevise>> response) {
+                                    if(response.body().size() == 0){
+                                        Call<ResponseActionMongoDevise> insert = service.insertDevise(new MongoDevise(device.getDeviceName(), new MongoBeacon( beacons.get(0).getName(),  beacons.get(0).getBluetoothName())));
+                                        insert.enqueue(new Callback<ResponseActionMongoDevise>() {
+                                            @Override
+                                            public void onResponse(Call<ResponseActionMongoDevise> call, Response<ResponseActionMongoDevise> response) {
+                                                oldPosition = beacons.get(0).getName();
+                                                Log.i("Retrofit", "Devise insert");
+                                            }
+
+                                            @Override
+                                            public void onFailure(Call<ResponseActionMongoDevise> call, Throwable t) {
+                                                Log.e("Retrofit", t.toString());
+                                            }
+                                        });
+                                    }else{
+                                        Call<ResponseActionMongoDevise> update = service.updateDevise(device.getDeviceID(), new MongoDevise(device.getDeviceName(), new MongoBeacon( beacons.get(0).getName(),  beacons.get(0).getBluetoothName())));
+                                        update.enqueue(new Callback<ResponseActionMongoDevise>() {
+                                            @Override
+                                            public void onResponse(Call<ResponseActionMongoDevise> call, Response<ResponseActionMongoDevise> response) {
+                                                oldPosition = beacons.get(0).getName();
+                                                Log.i("Retrofit", "Devise update");
+                                            }
+
+                                            @Override
+                                            public void onFailure(Call<ResponseActionMongoDevise> call, Throwable t) {
+                                                Log.e("Retrofit", t.toString());
+                                            }
+                                        });
+                                    }
+                                }
+                                @Override
+                                public void onFailure(Call<List<MongoDevise>> call, Throwable t) {
+                                    Log.e("Retrofit", t.toString());
+                                }
+                            });
+                        }
+                        ViewUtils.updateListViewBeacons(currentActivity, adapter, beacons);
+                    }else if(oldPosition != null && !oldPosition.equals(beacons.get(0).getName())){
+                        if(device != null && device.getDeviceName() != null){
+                            Call<List<MongoDevise>> find = service.devise(device.getDeviceID());
+                            find.enqueue(new Callback<List<MongoDevise>>() {
+                                @Override
+                                public void onResponse(Call<List<MongoDevise>> call, Response<List<MongoDevise>> response) {
+                                    if(response.body().size() == 0){
+                                        Call<ResponseActionMongoDevise> insert = service.insertDevise(new MongoDevise(device.getDeviceName(), new MongoBeacon( beacons.get(0).getName(),  beacons.get(0).getBluetoothName())));
+                                        insert.enqueue(new Callback<ResponseActionMongoDevise>() {
+                                            @Override
+                                            public void onResponse(Call<ResponseActionMongoDevise> call, Response<ResponseActionMongoDevise> response) {
+                                                oldPosition = beacons.get(0).getName();
+                                                Log.i("Retrofit", "Devise insert");
+                                            }
+
+                                            @Override
+                                            public void onFailure(Call<ResponseActionMongoDevise> call, Throwable t) {
+                                                Log.e("Retrofit", t.toString());
+                                            }
+                                        });
+                                    }else{
+                                        Call<ResponseActionMongoDevise> update = service.updateDevise(device.getDeviceID(), new MongoDevise(device.getDeviceName(), new MongoBeacon( beacons.get(0).getName(),  beacons.get(0).getBluetoothName())));
+                                        update.enqueue(new Callback<ResponseActionMongoDevise>() {
+                                            @Override
+                                            public void onResponse(Call<ResponseActionMongoDevise> call, Response<ResponseActionMongoDevise> response) {
+                                                oldPosition = beacons.get(0).getName();
+                                                Log.i("Retrofit", "Devise update");
+                                            }
+
+                                            @Override
+                                            public void onFailure(Call<ResponseActionMongoDevise> call, Throwable t) {
+                                                Log.e("Retrofit", t.toString());
+                                            }
+                                        });
+                                    }
+                                }
+                                @Override
+                                public void onFailure(Call<List<MongoDevise>> call, Throwable t) {
+                                    Log.e("Retrofit", t.toString());
+                                }
+                            });
+                        }
+                        ViewUtils.updateListViewBeacons(currentActivity, adapter, beacons);
+                    }
                 }
             }
         });

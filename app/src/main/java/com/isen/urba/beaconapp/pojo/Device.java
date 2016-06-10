@@ -2,12 +2,16 @@ package com.isen.urba.beaconapp.pojo;
 
 import android.os.Build;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
  * Created by romain on 03/06/2016.
  */
 public class Device {
 
+    @SerializedName("deviseID")
     private String deviceID = Build.ID;
+    @SerializedName("deviseName")
     private String deviceName = null;
 
     public Device(String deviceName) {
