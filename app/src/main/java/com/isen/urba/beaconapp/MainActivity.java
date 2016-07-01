@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity implements BeaconConsumer{
 
     Device device = new Device();
 
-    public String API = "http://10.134.15.12:4000/";
+    public String API = "http://10.134.15.2:4000/";
 
     Retrofit retrofit;
 
