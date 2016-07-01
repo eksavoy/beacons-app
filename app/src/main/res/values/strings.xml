@@ -3,4 +3,5 @@
     <string name="shared_pref">beacons</string>
     <string name="beacoon_key">listBeacons</string>
     <string name="device_key">device</string>
+    <string name="addr_key">backAddr</string>
 </resources>

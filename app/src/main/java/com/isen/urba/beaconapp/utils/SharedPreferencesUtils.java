@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.content.res.Resources;
 
 import com.google.gson.Gson;
+import com.google.gson.internal.Streams;
 import com.google.gson.reflect.TypeToken;
 import com.isen.urba.beaconapp.R;
 import com.isen.urba.beaconapp.pojo.Beacon;
@@ -73,5 +74,15 @@ public class SharedPreferencesUtils {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString(String.valueOf(R.string.device_key), device.getDeviceName());
         editor.commit();
+    }
+
+    public static void saveBackAddressInPreferences(SharedPreferences sharedPreferences, String addr){
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(String.valueOf(R.string.addr_key), addr);
+        editor.commit();
+    }
+
+    public static String getBackAddressFromPreferences(SharedPreferences sharedPreferences){
+        return sharedPreferences.getString(String.valueOf(R.string.addr_key), "");
     }
 }
